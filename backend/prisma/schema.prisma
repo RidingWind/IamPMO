@@ -1,0 +1,239 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// 用户模型
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      Role     @default(USER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // 关联
+  department   Department? @relation(fields: [departmentId], references: [id])
+  departmentId String?
+  company      Company?    @relation(fields: [companyId], references: [id])
+  companyId    String?
+  
+  // 用户可能参与的项目
+  projects     ProjectMember[]
+}
+
+// 角色枚举
+enum Role {
+  ADMIN
+  MANAGER
+  USER
+}
+
+// 部门模型（树形结构）
+model Department {
+  id        String   @id @default(uuid())
+  name      String
+  code      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // 树形结构
+  parent    Department?  @relation("DepartmentHierarchy", fields: [parentId], references: [id])
+  parentId  String?
+  children  Department[] @relation("DepartmentHierarchy")
+  
+  // 关联
+  users     User[]
+}
+
+// 合作公司模型
+model Company {
+  id          String   @id @default(uuid())
+  name        String
+  code        String?
+  contactName String?
+  contactPhone String?
+  address     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // 关联
+  users       User[]
+  projects    Project[]
+}
+
+// 项目模型
+model Project {
+  id              String   @id @default(uuid())
+  name            String
+  code            String
+  status          ProjectStatus @default(PLANNING)
+  startDate       DateTime?
+  plannedEndDate  DateTime?
+  actualEndDate   DateTime?
+  description     String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // 关联
+  implementer     Company?  @relation(fields: [implementerId], references: [id])
+  implementerId   String?
+  members         ProjectMember[]
+  milestones      Milestone[]
+  issues          Issue[]
+  businessSystems BusinessSystem[]
+}
+
+// 项目状态枚举
+enum ProjectStatus {
+  PLANNING
+  ONGOING
+  COMPLETED
+  SUSPENDED
+  CANCELLED
+}
+
+// 项目成员关联表
+model ProjectMember {
+  id        String   @id @default(uuid())
+  role      String
+  joinDate  DateTime @default(now())
+  
+  // 关联
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  project   Project  @relation(fields: [projectId], references: [id])
+  projectId String
+  
+  @@unique([userId, projectId])
+}
+
+// 里程碑计划模型
+model Milestone {
+  id          String   @id @default(uuid())
+  name        String
+  plannedDate DateTime
+  actualDate  DateTime?
+  status      MilestoneStatus @default(PENDING)
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // 关联
+  project     Project  @relation(fields: [projectId], references: [id])
+  projectId   String
+  detailPlans DetailPlan[]
+}
+
+// 里程碑状态枚举
+enum MilestoneStatus {
+  PENDING
+  COMPLETED
+  DELAYED
+  CANCELLED
+}
+
+// 详细计划模型
+model DetailPlan {
+  id          String   @id @default(uuid())
+  name        String
+  type        PlanType
+  startDate   DateTime
+  endDate     DateTime
+  status      PlanStatus @default(PENDING)
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // 关联
+  milestone   Milestone @relation(fields: [milestoneId], references: [id])
+  milestoneId String
+}
+
+// 计划类型枚举
+enum PlanType {
+  SIT_TEST
+  UAT_TEST
+  DEPLOYMENT
+  DEVELOPMENT
+  DATA_MIGRATION
+  TRAINING
+  OTHER
+}
+
+// 计划状态枚举
+enum PlanStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  DELAYED
+  CANCELLED
+}
+
+// 业务系统模型
+model BusinessSystem {
+  id          String   @id @default(uuid())
+  name        String
+  code        String
+  purpose     String?
+  isProduct   Boolean  @default(false)
+  department  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // 关联
+  projects    Project[]
+}
+
+// 问题风险模型
+model Issue {
+  id          String   @id @default(uuid())
+  title       String
+  description String
+  type        IssueType
+  priority    IssuePriority
+  status      IssueStatus @default(OPEN)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  dueDate     DateTime?
+  resolvedAt  DateTime?
+  
+  // 关联
+  project     Project  @relation(fields: [projectId], references: [id])
+  projectId   String
+  assigneeId  String?
+  reporterId  String?
+}
+
+// 问题类型枚举
+enum IssueType {
+  RISK
+  ISSUE
+  CHANGE_REQUEST
+  DEPENDENCY
+}
+
+// 问题优先级枚举
+enum IssuePriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+// 问题状态枚举
+enum IssueStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+  REOPENED
+}
