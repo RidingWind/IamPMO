@@ -6,13 +6,13 @@ import { PrismaClient } from '@prisma/client';
 
 // 路由导入
 import authRoutes from './routes/auth.routes';
-import userRoutes from './routes/user.routes';
+// import userRoutes from './routes/user.routes';
 import projectRoutes from './routes/project.routes';
 import departmentRoutes from './routes/department.routes';
 import companyRoutes from './routes/company.routes';
 import issueRoutes from './routes/issue.routes';
 import systemRoutes from './routes/system.routes';
-import planRoutes from './routes/plan.routes';
+// import planRoutes from './routes/plan.routes';
 
 // 加载环境变量
 dotenv.config();
@@ -22,7 +22,7 @@ export const prisma = new PrismaClient();
 
 // 创建Express应用
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3002;
 
 // 中间件
 app.use(cors());
@@ -36,21 +36,35 @@ app.get('/', (req, res) => {
 
 // API路由
 app.use('/api/auth', authRoutes);
-app.use('/api/users', userRoutes);
+// app.use('/api/users', userRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/departments', departmentRoutes);
 app.use('/api/companies', companyRoutes);
 app.use('/api/issues', issueRoutes);
 app.use('/api/systems', systemRoutes);
-app.use('/api/plans', planRoutes);
+// app.use('/api/plans', planRoutes);
+
+// 自定义错误类型
+class AppError extends Error {
+    statusCode: number;
+    
+    constructor(message: string, statusCode: number = 500) {
+        super(message);
+        this.statusCode = statusCode;
+    }
+}
 
 // 错误处理中间件
-app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  console.error(err.stack);
-  res.status(err.statusCode || 500).json({
-    message: err.message || '服务器内部错误',
-    stack: process.env.NODE_ENV === 'production' ? '🥞' : err.stack,
-  });
+app.use((err: AppError | Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
+    console.error(err.stack);
+    const statusCode = err instanceof AppError ? err.statusCode : 500;
+    res.status(statusCode).json({
+        error: {
+            message: err.message || '服务器内部错误',
+            status: statusCode,
+            stack: process.env.NODE_ENV === 'production' ? '🥞' : err.stack,
+        }
+    });
 });
 
 // 启动服务器

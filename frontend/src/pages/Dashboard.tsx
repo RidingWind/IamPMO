@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Row, Col, Card, Statistic, Table, List, Typography, Tag, Spin } from 'antd';
+import { Row, Col, Card, Statistic, List, Typography, Tag, Spin, Alert, Button, message } from 'antd';
 import { ProjectOutlined, AlertOutlined, CheckCircleOutlined, ClockCircleOutlined } from '@ant-design/icons';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
@@ -28,6 +28,7 @@ interface Issue {
 
 const Dashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [projectStats, setProjectStats] = useState({
     total: 0,
     ongoing: 0,
@@ -50,33 +51,68 @@ const Dashboard: React.FC = () => {
         
         // 获取项目统计
         const projectsResponse = await axios.get('/api/projects');
-        const projects = projectsResponse.data;
+        const projects = Array.isArray(projectsResponse.data) ? projectsResponse.data : [];
         
-        setProjectStats({
-          total: projects.length,
-          ongoing: projects.filter((p: Project) => p.status === 'ONGOING').length,
-          completed: projects.filter((p: Project) => p.status === 'COMPLETED').length,
-          planning: projects.filter((p: Project) => p.status === 'PLANNING').length
-        });
-        
-        // 获取最近的项目
-        setRecentProjects(projects.slice(0, 5));
+        if (projects.length > 0) {
+          setProjectStats({
+            total: projects.length,
+            ongoing: projects.filter((p: Project) => p.status === 'ONGOING').length,
+            completed: projects.filter((p: Project) => p.status === 'COMPLETED').length,
+            planning: projects.filter((p: Project) => p.status === 'PLANNING').length
+          });
+          
+          // 获取最近的项目
+          setRecentProjects(projects.slice(0, 5));
+        } else {
+          setProjectStats({
+            total: 0,
+            ongoing: 0,
+            completed: 0,
+            planning: 0
+          });
+          setRecentProjects([]);
+        }
         
         // 获取问题统计
         const issuesResponse = await axios.get('/api/issues');
-        const issues = issuesResponse.data;
-        
+        // 兼容 issuesResponse.data 可能为对象或数组
+        const issues = Array.isArray(issuesResponse.data)
+          ? issuesResponse.data
+          : Array.isArray(issuesResponse.data?.data)
+            ? issuesResponse.data.data
+            : [];
+
         setIssueStats({
           total: issues.length,
           open: issues.filter((i: Issue) => i.status === 'OPEN').length,
           inProgress: issues.filter((i: Issue) => i.status === 'IN_PROGRESS').length,
           resolved: issues.filter((i: Issue) => i.status === 'RESOLVED').length
         });
-        
+
         // 获取最近的问题
         setRecentIssues(issues.slice(0, 5));
-      } catch (error) {
+      } catch (error: unknown) {
         console.error('获取仪表盘数据失败:', error);
+        if (
+          typeof error === 'object' &&
+          error !== null &&
+          'response' in error &&
+          error.response &&
+          typeof error.response === 'object' &&
+          'data' in error.response &&
+          error.response.data &&
+          typeof error.response.data === 'object'
+        ) {
+          const errData = error.response.data as { message?: string };
+          setError(
+            'message' in errData && typeof errData.message === 'string'
+              ? errData.message
+              : '获取仪表盘数据失败'
+          );
+        } else {
+          setError('获取仪表盘数据失败');
+        }
+        message.error('获取仪表盘数据失败');
       } finally {
         setLoading(false);
       }
@@ -139,8 +175,110 @@ const Dashboard: React.FC = () => {
 
   if (loading) {
     return (
-      <div style={{ textAlign: 'center', padding: '50px' }}>
-        <Spin size="large" />
+      <div style={{ 
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: 'calc(100vh - 64px)',
+        background: 'rgba(0, 0, 0, 0.02)'
+      }}>
+        <Spin size="large" tip="数据加载中..." fullscreen />
+      </div>
+    );
+  }
+
+  if (error) {
+    // 重新定义 fetchDashboardData 以便重试按钮使用
+    const fetchDashboardData = async () => {
+      try {
+      setLoading(true);
+
+      // 获取项目统计
+      const projectsResponse = await axios.get('/api/projects');
+      const projects = Array.isArray(projectsResponse.data) ? projectsResponse.data : [];
+
+      if (projects.length > 0) {
+        setProjectStats({
+        total: projects.length,
+        ongoing: projects.filter((p: Project) => p.status === 'ONGOING').length,
+        completed: projects.filter((p: Project) => p.status === 'COMPLETED').length,
+        planning: projects.filter((p: Project) => p.status === 'PLANNING').length
+        });
+
+        setRecentProjects(projects.slice(0, 5));
+      } else {
+        setProjectStats({
+        total: 0,
+        ongoing: 0,
+        completed: 0,
+        planning: 0
+        });
+        setRecentProjects([]);
+      }
+
+      // 获取问题统计
+      const issuesResponse = await axios.get('/api/issues');
+      const issues = Array.isArray(issuesResponse.data)
+        ? issuesResponse.data
+        : Array.isArray(issuesResponse.data?.data)
+        ? issuesResponse.data.data
+        : [];
+
+      setIssueStats({
+        total: issues.length,
+        open: issues.filter((i: Issue) => i.status === 'OPEN').length,
+        inProgress: issues.filter((i: Issue) => i.status === 'IN_PROGRESS').length,
+        resolved: issues.filter((i: Issue) => i.status === 'RESOLVED').length
+      });
+
+      setRecentIssues(issues.slice(0, 5));
+      setError(null);
+      } catch (error: unknown) {
+      console.error('获取仪表盘数据失败:', error);
+      if (
+        typeof error === 'object' &&
+        error !== null &&
+        'response' in error &&
+        error.response &&
+        typeof error.response === 'object' &&
+        'data' in error.response &&
+        error.response.data &&
+        typeof error.response.data === 'object'
+      ) {
+        const errData = error.response.data as { message?: string };
+        setError(
+          'message' in errData && typeof errData.message === 'string'
+            ? errData.message
+            : '获取仪表盘数据失败'
+        );
+      } else {
+        setError('获取仪表盘数据失败');
+      }
+      message.error('获取仪表盘数据失败');
+      } finally {
+      setLoading(false);
+      }
+    };
+
+    return (
+      <div style={{ padding: 24 }}>
+        <Alert
+          message="加载仪表盘数据失败"
+          description={error}
+          type="error"
+          showIcon
+        />
+        <Button 
+          type="primary" 
+          style={{ marginTop: 16 }}
+          onClick={() => {
+            setError(null);
+            setLoading(true);
+            fetchDashboardData();
+          }}
+        >
+          重试
+        </Button>
       </div>
     );
   }

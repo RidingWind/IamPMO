@@ -15,8 +15,14 @@ const PrivateRoute: React.FC<PrivateRouteProps> = ({ element, requiredRoles }) =
   // 如果正在加载，显示加载指示器
   if (isLoading) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-        <Spin size="large" tip="加载中..." />
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        height: '100vh',
+        background: 'rgba(0, 0, 0, 0.02)'
+      }}>
+        <Spin size="large" fullscreen tip="加载中..." />
       </div>
     );
   }

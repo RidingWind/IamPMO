@@ -2,8 +2,8 @@ import React, { createContext, useState, useEffect, useContext } from 'react';
 import axios from 'axios';
 import { message } from 'antd';
 
-// API基础URL
-const API_BASE_URL = 'http://localhost:3001/api';
+// API基础URL - 从环境变量获取，默认为http://localhost:3001/api
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
 // 用户类型定义
 interface User {

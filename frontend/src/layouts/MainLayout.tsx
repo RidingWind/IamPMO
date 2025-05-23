@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { Layout, Menu, Button, Avatar, Dropdown, Space, Typography } from 'antd';
+import { Layout, Menu, Avatar, Dropdown, Space, Typography } from 'antd';
 import {
   DashboardOutlined,
   ProjectOutlined,
@@ -39,58 +39,77 @@ const MainLayout: React.FC = () => {
   };
 
   // 用户下拉菜单
-  const userMenu = (
-    <Menu
-      items={[
-        {
-          key: 'profile',
-          icon: <UserOutlined />,
-          label: '个人资料',
-          onClick: () => navigate('/profile'),
-        },
-        {
-          key: 'settings',
-          icon: <SettingOutlined />,
-          label: '设置',
-          onClick: () => navigate('/settings'),
-        },
-        {
-          type: 'divider',
-        },
-        {
-          key: 'logout',
-          icon: <LogoutOutlined />,
-          label: '退出登录',
-          onClick: () => {
-            logout();
-            navigate('/auth/login');
-          },
-        },
-      ]}
-    />
-  );
+  const userMenu = [
+    {
+      key: 'profile',
+      icon: <UserOutlined />,
+      label: '个人资料',
+      onClick: () => navigate('/profile'),
+    },
+    {
+      key: 'settings',
+      icon: <SettingOutlined />,
+      label: '设置',
+      onClick: () => navigate('/settings'),
+    },
+    {
+      key: 'logout',
+      icon: <LogoutOutlined />,
+      label: '退出登录',
+      onClick: () => {
+        logout();
+        navigate('/auth/login');
+      },
+    },
+  ]
+
 
   return (
     <Layout style={{ minHeight: '100vh' }}>
-      {/* 侧边栏 */}
-      <Sider 
-        trigger={null} 
-        collapsible 
+        {/* 可收缩的侧边栏 */}
+        <Sider
+        trigger={null}
+        collapsible
         collapsed={collapsed}
+        width={250}
         style={{
           overflow: 'auto',
           height: '100vh',
           position: 'fixed',
           left: 0,
-          top: 0,
-          bottom: 0,
+          zIndex: 1,
+          boxShadow: '2px 0 8px 0 rgba(29, 35, 41, 0.05)'
         }}
       >
-        <div style={{ height: 32, margin: 16, background: 'rgba(255, 255, 255, 0.2)', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-          <Title level={5} style={{ color: 'white', margin: 0 }}>
+                {/* 侧边栏顶部logo/标题区域 */}
+        <div style={{
+          height: 64,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: '#001529',
+          color: 'white'
+        }}>
+          <Title level={4} style={{ color: 'white', margin: 0 }}>
             {collapsed ? 'PMO' : 'PMO工具箱'}
           </Title>
         </div>
+        
+        {/* 用户信息区域 */}
+        <div style={{
+          padding: '16px',
+          display: 'flex',
+          alignItems: 'center',
+          borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
+        }}>
+            <Dropdown menu={{ items: userMenu }} placement="bottomRight">
+              <Space style={{ cursor: 'pointer' }}>
+                <Avatar icon={<UserOutlined />} />
+                <span>{user?.name || '用户'}</span>
+              </Space>
+            </Dropdown>
+        </div>
+
         <Menu
           theme="dark"
           mode="inline"
@@ -142,29 +161,31 @@ const MainLayout: React.FC = () => {
         />
       </Sider>
       
-      {/* 主内容区 */}
-      <Layout style={{ marginLeft: collapsed ? 80 : 200, transition: 'all 0.2s' }}>
-        {/* 头部 */}
-        <Header style={{ padding: 0, background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Button
-            type="text"
-            icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-            onClick={() => setCollapsed(!collapsed)}
-            style={{ fontSize: '16px', width: 64, height: 64 }}
-          />
-          
-          <div style={{ marginRight: 20 }}>
-            <Dropdown overlay={userMenu} placement="bottomRight">
-              <Space style={{ cursor: 'pointer' }}>
-                <Avatar icon={<UserOutlined />} />
-                <span>{user?.name || '用户'}</span>
-              </Space>
-            </Dropdown>
-          </div>
+ {/* 主内容区域 */}
+      <Layout style={{ marginLeft: collapsed ? 80 : 250, transition: 'all 0.2s' }}>
+        {/* 顶部导航栏 */}
+        <Header style={{ 
+          padding: 0,
+          background: '#fff',
+          boxShadow: '0 1px 4px rgba(0, 21, 41, 0.08)',
+          display: 'flex',
+          alignItems: 'center'
+        }}>
+          {React.createElement(collapsed ? MenuUnfoldOutlined : MenuFoldOutlined, {
+            className: 'trigger',
+            onClick: () => setCollapsed(!collapsed),
+            style: { fontSize: '18px', marginLeft: 16 }
+          })}
         </Header>
-        
-        {/* 内容区 */}
-        <Content style={{ margin: '24px 16px', padding: 24, background: '#fff', minHeight: 280 }}>
+
+        {/* 页面内容 */}
+        <Content style={{
+          margin: '24px 16px',
+          padding: '24px 16[c',
+          background: '#fff',
+          minHeight: 280,
+          overflow: 'initial'
+        }}>
           <Outlet />
         </Content>
       </Layout>

@@ -1,12 +1,12 @@
 import express from 'express';
 import { body, param, validationResult } from 'express-validator';
 import { prisma } from '../index';
-import { auth, checkRole } from '../middleware/auth.middleware';
+import { adminMiddleware, authMiddleware, managerMiddleware } from '../middleware/auth.middleware';
 
 const router = express.Router();
 
 // 获取所有项目
-router.get('/', auth, async (req, res) => {
+router.get('/', authMiddleware, async (req, res) => {
   try {
     const projects = await prisma.project.findMany({
       include: {
@@ -34,7 +34,7 @@ router.get('/', auth, async (req, res) => {
 });
 
 // 获取单个项目详情
-router.get('/:id', auth, async (req, res) => {
+router.get('/:id', authMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
     const project = await prisma.project.findUnique({
@@ -77,15 +77,13 @@ router.get('/:id', auth, async (req, res) => {
 // 创建新项目
 router.post(
   '/',
-  [
-    auth,
-    checkRole(['ADMIN', 'MANAGER']),
+    authMiddleware,
+    managerMiddleware,
     body('name').notEmpty().withMessage('项目名称不能为空'),
     body('code').notEmpty().withMessage('项目编号不能为空'),
     body('status').isIn(['PLANNING', 'ONGOING', 'COMPLETED', 'SUSPENDED', 'CANCELLED']).withMessage('无效的项目状态'),
     body('startDate').optional().isISO8601().withMessage('开始日期格式无效'),
     body('plannedEndDate').optional().isISO8601().withMessage('计划结束日期格式无效'),
-  ],
   async (req, res) => {
     // 验证请求
     const errors = validationResult(req);
@@ -141,16 +139,14 @@ router.post(
 // 更新项目
 router.put(
   '/:id',
-  [
-    auth,
-    checkRole(['ADMIN', 'MANAGER']),
+    authMiddleware,
+    managerMiddleware,
     param('id').isUUID().withMessage('无效的项目ID'),
     body('name').optional().notEmpty().withMessage('项目名称不能为空'),
     body('status').optional().isIn(['PLANNING', 'ONGOING', 'COMPLETED', 'SUSPENDED', 'CANCELLED']).withMessage('无效的项目状态'),
     body('startDate').optional().isISO8601().withMessage('开始日期格式无效'),
     body('plannedEndDate').optional().isISO8601().withMessage('计划结束日期格式无效'),
     body('actualEndDate').optional().isISO8601().withMessage('实际结束日期格式无效'),
-  ],
   async (req, res) => {
     // 验证请求
     const errors = validationResult(req);
@@ -197,7 +193,7 @@ router.put(
 );
 
 // 删除项目
-router.delete('/:id', auth, checkRole(['ADMIN']), async (req, res) => {
+router.delete('/:id', authMiddleware, managerMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -253,13 +249,11 @@ router.delete('/:id', auth, checkRole(['ADMIN']), async (req, res) => {
 // 添加项目成员
 router.post(
   '/:id/members',
-  [
-    auth,
-    checkRole(['ADMIN', 'MANAGER']),
+    authMiddleware,
+    managerMiddleware,
     param('id').isUUID().withMessage('无效的项目ID'),
     body('userId').isUUID().withMessage('无效的用户ID'),
     body('role').notEmpty().withMessage('角色不能为空'),
-  ],
   async (req, res) => {
     // 验证请求
     const errors = validationResult(req);
@@ -334,8 +328,8 @@ router.post(
 // 移除项目成员
 router.delete(
   '/:projectId/members/:memberId',
-  auth,
-  checkRole(['ADMIN', 'MANAGER']),
+  authMiddleware,
+  managerMiddleware,
   async (req, res) => {
     try {
       const { projectId, memberId } = req.params;

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import ErrorBoundary from '../../components/ErrorBoundary';
 import { Form, Input, Button, DatePicker, Select, Typography, message } from 'antd';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../../utils/api';
 
 const { Title } = Typography;
 const { Option } = Select;
@@ -14,6 +15,17 @@ interface Company {
   code: string;
 }
 
+// 定义表单字段类型
+interface ProjectFormValues {
+  name: string;
+  code: string;
+  status: string;
+  implementerId?: string;
+  startDate?: moment.Moment;
+  plannedEndDate?: moment.Moment;
+  description?: string;
+}
+
 const ProjectCreate: React.FC = () => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
@@ -24,21 +36,34 @@ const ProjectCreate: React.FC = () => {
   useEffect(() => {
     const fetchCompanies = async () => {
       try {
-        const response = await axios.get('/api/companies');
-        setCompanies(response.data);
+        const result = await api.get('/companies');
+        // 处理多种可能的响应格式
+        let companiesData = [];
+        if (Array.isArray(result)) {
+          companiesData = result;
+        } else if (result && Array.isArray(result.data)) {
+          companiesData = result.data;
+        } else if (result && result.data && Array.isArray(result.data.companies)) {
+          companiesData = result.data.companies;
+        }
+        setCompanies(companiesData);
       } catch (error) {
         console.error('获取公司列表失败:', error);
-        message.error('获取公司列表失败');
       }
     };
-
     fetchCompanies();
   }, []);
 
-  // 提交表单
-  const onFinish = async (values: any) => {
+  const onFinish = async (values: ProjectFormValues) => {
     try {
       setLoading(true);
+
+      // 检查用户权限
+      const userRole = localStorage.getItem('userRole');
+      if (userRole !== 'ADMIN' && userRole !== 'MANAGER') {
+        message.error('权限不足，无法创建项目');
+        return;
+      }
       
       // 格式化日期
       const formattedValues = {
@@ -47,7 +72,7 @@ const ProjectCreate: React.FC = () => {
         plannedEndDate: values.plannedEndDate ? values.plannedEndDate.toISOString() : undefined,
       };
       
-      await axios.post('/api/projects', formattedValues);
+      await api.post('/projects', formattedValues);
       message.success('项目创建成功');
       navigate('/projects');
     } catch (error) {
@@ -62,12 +87,18 @@ const ProjectCreate: React.FC = () => {
     <div>
       <Title level={2}>创建新项目</Title>
       
-      <Form
-        form={form}
-        layout="vertical"
-        onFinish={onFinish}
-        style={{ maxWidth: 800 }}
-      >
+      <ErrorBoundary fallback={
+        <div style={{ padding: 24 }}>
+          <h2>表单加载失败</h2>
+          <p>无法加载项目创建表单，请刷新页面重试</p>
+        </div>
+      }>
+        <Form
+          form={form}
+          layout="vertical"
+          onFinish={onFinish}
+          style={{ maxWidth: 800 }}
+        >
         <Form.Item
           name="name"
           label="项目名称"
@@ -98,7 +129,6 @@ const ProjectCreate: React.FC = () => {
             <Option value="CANCELLED">已取消</Option>
           </Select>
         </Form.Item>
-        
         <Form.Item
           name="implementerId"
           label="项目实施方"
@@ -118,7 +148,7 @@ const ProjectCreate: React.FC = () => {
         >
           <DatePicker style={{ width: '100%' }} />
         </Form.Item>
-        
+
         <Form.Item
           name="plannedEndDate"
           label="计划上线时间"
@@ -141,8 +171,9 @@ const ProjectCreate: React.FC = () => {
             取消
           </Button>
         </Form.Item>
-      </Form>
-    </div>
+              </Form>
+            </ErrorBoundary>
+            </div>
   );
 };
 

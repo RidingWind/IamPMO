@@ -6,7 +6,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -44,7 +44,11 @@ model Department {
   code      String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
+  // 现有字段保持不变
+  order       Int？    @default(0)  // 添加排序字段
+  isVirtual   Boolean  @default(false) // 是否虚拟部门
+
   // 树形结构
   parent    Department?  @relation("DepartmentHierarchy", fields: [parentId], references: [id])
   parentId  String?
@@ -57,11 +61,12 @@ model Department {
 // 合作公司模型
 model Company {
   id          String   @id @default(uuid())
-  name        String
-  code        String?
+  name        String     @unique
+  code        String     @unique
   contactName String?
   contactPhone String?
   address     String?
+  contactEmail       String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   
@@ -152,6 +157,10 @@ model DetailPlan {
   description String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  parentId    String?
+  parent      Department?  @relation("DetailPlanHierarchy", fields: [parentId], references: [id])
+  children    Department[] @relation("DetailPlanHierarchy")
+  order       Int         @default(0)
   
   // 关联
   milestone   Milestone @relation(fields: [milestoneId], references: [id])
@@ -186,6 +195,8 @@ model BusinessSystem {
   purpose     String?
   isProduct   Boolean  @default(false)
   department  String?
+  status      String   @default("ACTIVE") // 添加状态字段
+  contact     String?  // 添加联系人
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   

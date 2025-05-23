@@ -46,6 +46,12 @@ npm install
 # 安装前端依赖
 cd ../frontend
 npm install
+npm install --save-dev typescript @types/react @types/react-dom
+
+# 如需清理并重新安装依赖
+rm -rf node_modules package-lock.json
+npm install
+npm start
 ```
 
 ### 数据库设置
@@ -54,12 +60,21 @@ npm install
 # 在后端目录中初始化Prisma
 cd backend
 npx prisma migrate dev --name init
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+# 在项目根目录执行
+curl https://raw.githubusercontent.com/facebook/create-react-app/main/packages/cra-template/template/public/index.html > public/index.html
 ```
 
 ### 启动应用
 
 ```bash
 # 启动后端服务 (在backend目录中)
+
 npm run dev
 
 # 启动前端服务 (在frontend目录中)

@@ -1,12 +1,12 @@
 import express from 'express';
 import { body, param, validationResult } from 'express-validator';
 import { prisma } from '../index';
-import { auth } from '../middleware/auth.middleware';
+import { authMiddleware } from '../middleware/auth.middleware';
 
 const router = express.Router();
 
 // 获取所有问题/风险
-router.get('/', auth, async (req, res) => {
+router.get('/', authMiddleware, async (req, res) => {
   try {
     const { projectId, type, status, priority } = req.query;
 
@@ -53,7 +53,7 @@ router.get('/', auth, async (req, res) => {
 });
 
 // 获取单个问题/风险详情
-router.get('/:id', auth, async (req, res) => {
+router.get('/:id', authMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
     const issue = await prisma.issue.findUnique({
@@ -84,7 +84,7 @@ router.get('/:id', auth, async (req, res) => {
 router.post(
   '/',
   [
-    auth,
+    authMiddleware,
     body('title').notEmpty().withMessage('标题不能为空'),
     body('description').notEmpty().withMessage('描述不能为空'),
     body('type').isIn(['RISK', 'ISSUE', 'CHANGE_REQUEST', 'DEPENDENCY']).withMessage('无效的类型'),
@@ -92,7 +92,7 @@ router.post(
     body('projectId').isUUID().withMessage('无效的项目ID'),
     body('dueDate').optional().isISO8601().withMessage('截止日期格式无效'),
   ],
-  async (req, res) => {
+  async (req: express.Request, res: express.Response) => {
     // 验证请求
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -140,7 +140,7 @@ router.post(
 router.put(
   '/:id',
   [
-    auth,
+    authMiddleware,
     param('id').isUUID().withMessage('无效的问题/风险ID'),
     body('title').optional().notEmpty().withMessage('标题不能为空'),
     body('description').optional().notEmpty().withMessage('描述不能为空'),
@@ -149,7 +149,7 @@ router.put(
     body('status').optional().isIn(['OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED', 'REOPENED']).withMessage('无效的状态'),
     body('dueDate').optional().isISO8601().withMessage('截止日期格式无效'),
   ],
-  async (req, res) => {
+  async (req: express.Request, res: express.Response) => {
     // 验证请求
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -211,7 +211,7 @@ router.put(
 );
 
 // 删除问题/风险
-router.delete('/:id', auth, async (req, res) => {
+router.delete('/:id', authMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -237,7 +237,7 @@ router.delete('/:id', auth, async (req, res) => {
 });
 
 // 获取项目的所有问题/风险
-router.get('/project/:projectId', auth, async (req, res) => {
+router.get('/project/:projectId', authMiddleware, async (req, res) => {
   try {
     const { projectId } = req.params;
     const { type, status, priority } = req.query;

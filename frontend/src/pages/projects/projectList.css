@@ -1,0 +1,24 @@
+/* 项目列表表格样式 */
+.table-row-completed {
+  background-color: #f6ffed;
+}
+
+.table-row-completed:hover > td {
+  background-color: #e6f7d8 !important;
+}
+
+.table-row-suspended {
+  background-color: #fff7e6;
+}
+
+.table-row-suspended:hover > td {
+  background-color: #ffeccc !important;
+}
+
+.table-row-cancelled {
+  background-color: #fff1f0;
+}
+
+.table-row-cancelled:hover > td {
+  background-color: #ffccc7 !important;
+}

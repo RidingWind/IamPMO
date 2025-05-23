@@ -1,7 +1,7 @@
-import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { ConfigProvider } from 'antd';
-import zhCN from 'antd/lib/locale/zh_CN';
+import { ConfigProvider, App as AntdApp, Spin } from 'antd';
+import '@ant-design/v5-patch-for-react-19';
+import zhCN from 'antd/locale/zh_CN';
 
 // 布局组件
 import MainLayout from './layouts/MainLayout';
@@ -14,6 +14,7 @@ import Register from './pages/Register';
 import ProjectList from './pages/projects/ProjectList';
 import ProjectDetail from './pages/projects/ProjectDetail';
 import ProjectCreate from './pages/projects/ProjectCreate';
+import ProjectEdit from './pages/projects/ProjectEdit';
 import IssueList from './pages/issues/IssueList';
 import IssueDetail from './pages/issues/IssueDetail';
 import IssueCreate from './pages/issues/IssueCreate';
@@ -23,11 +24,28 @@ import NotFound from './pages/NotFound';
 import { AuthProvider } from './contexts/AuthContext';
 import PrivateRoute from './components/PrivateRoute';
 
-const App: React.FC = () => {
+// 如果需要自定义指示器，可以这样写：
+// import { LoadingOutlined } from '@ant-design/icons';
+// Spin.setDefaultIndicator(<LoadingOutlined style={{ fontSize: 32 }} spin />);
+Spin.setDefaultIndicator(null);
+
+// const App: React.FC = () => {
+function App() {
   return (
-    <ConfigProvider locale={zhCN}>
-      <AuthProvider>
-        <Router>
+    <ConfigProvider 
+      locale={zhCN}
+      componentSize="middle"
+      theme={{
+        components: {
+          Spin: {
+            colorPrimary: '#1890ff', // 设置加载动画颜色
+          }
+        }
+      }}
+    >
+      <AntdApp>
+        <AuthProvider>
+          <Router>
           <Routes>
             {/* 认证路由 */}
             <Route path="/auth" element={<AuthLayout />}>
@@ -45,6 +63,7 @@ const App: React.FC = () => {
                 <Route path="" element={<ProjectList />} />
                 <Route path="create" element={<ProjectCreate />} />
                 <Route path=":id" element={<ProjectDetail />} />
+                <Route path=":id/edit" element={<ProjectEdit />} />
               </Route>
               
               {/* 问题/风险管理路由 */}
@@ -58,8 +77,9 @@ const App: React.FC = () => {
             {/* 404页面 */}
             <Route path="*" element={<NotFound />} />
           </Routes>
-        </Router>
-      </AuthProvider>
+          </Router>
+        </AuthProvider>
+      </AntdApp>
     </ConfigProvider>
   );
 };

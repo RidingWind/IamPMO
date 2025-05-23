@@ -448,24 +448,25 @@ const ProjectDetail: React.FC = () => {
   ];
 
   return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
         <Title level={2}>{project.name}</Title>
         <Space>
-          <Button 
-            type="primary" 
-            icon={<EditOutlined />} 
-            onClick={() => navigate(`/projects/${id}/edit`)}
-          >
-            编辑项目
-          </Button>
+          {(user?.role === 'ADMIN' || user?.role === 'MANAGER') && (
+            <Button 
+              type="primary" 
+              icon={<EditOutlined />} 
+              onClick={() => navigate(`/projects/${id}/edit`)}
+            >
+              编辑项目
+            </Button>
+          )}
           <Button 
             onClick={() => navigate('/projects')}
           >
             返回列表
           </Button>
         </Space>
-      </div>
+
 
       {/* 项目基本信息 */}
       <Card title="基本信息" style={{ marginBottom: 24 }}>
@@ -608,11 +609,10 @@ const ProjectDetail: React.FC = () => {
           >
             <Input placeholder="如：项目经理、开发人员、测试人员等" />
           </Form.Item>
-          
-          <Form.Item>
             <Button type="primary" htmlType="submit">
               添加
             </Button>
+          <Form.Item>
             <Button style={{ marginLeft: 8 }} onClick={() => setMemberModalVisible(false)}>
               取消
             </Button>
